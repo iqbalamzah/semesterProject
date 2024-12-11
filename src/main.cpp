@@ -23,17 +23,12 @@
 // Define Sensor PIR
 #define sensorPIR 4
 
-// coba sensor yang ada
-int Vibration_signal = 5; // Define the Digital Input on the Arduino for the sensor signal
-int Sensor_State = 1;
-
 // Initialize Firebase and DHT sensors
 FirebaseData fbdo;
 FirebaseAuth auth;
 FirebaseConfig config;
 
 DHT dht1(DHTPIN1, DHTTYPE); // DHT sensor 1 on 17
-
 
 unsigned long sendDataPrevMillis = 0;
 int delayBetweenPosts = 10000; // Delay between posts (10 seconds)
@@ -65,10 +60,6 @@ void setup()
 
   // Initialize DHT sensors
   dht1.begin();
- 
-
-  // coba sensor yang ada aja
-  pinMode(Vibration_signal, INPUT); // Set pin as input
 }
 
 void loop()
@@ -80,7 +71,6 @@ void loop()
     // Read temperature and humidity from DHT22 sensor 1
     float temperature1 = dht1.readTemperature();
     float humidity1 = dht1.readHumidity();
-
 
     // Check if readings are valid
     if (isnan(temperature1) || isnan(humidity1))
@@ -111,21 +101,5 @@ void loop()
     {
       Serial.println("Failed to upload Sensor 1 humidity: " + fbdo.errorReason());
     }
-
-
-// Kita coba yang ada
-    Serial.print("Vibration status: ");
-    Sensor_State = digitalRead(Vibration_signal);
-    if (Sensor_State == 1)
-    {
-      Serial.println("Sensing vibration");
-    }
-    else
-    {
-      Serial.println("No vibration");
-    }
-    delay(50);
   }
-
-
 }
