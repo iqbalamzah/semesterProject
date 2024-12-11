@@ -2,7 +2,7 @@
 #include <WiFi.h>
 #include <Firebase_ESP_Client.h>
 #include <Adafruit_Sensor.h>
-// #include <Wire.h>
+#include <Wire.h>
 #include <DHT.h> // DHT sensor library
 
 // DHT Sensor type
@@ -21,7 +21,15 @@
 // #define DHT_PIN2 D6
 
 // Define Sensor PIR
-#define sensorPIR 4
+#define sensorPIR 5
+int PIRStat = 0;
+
+// define sensor asap MQ135
+const int mq135Pin = 35;
+
+// Calibration constant (adjust based on your sensor and environment)
+const float R0 = 10.0;              // This should be calibrated in clean air
+const float smokeThreshold = 200.0; // Threshold ppm for smoke detection
 
 // Initialize Firebase and DHT sensors
 FirebaseData fbdo;
@@ -31,7 +39,7 @@ FirebaseConfig config;
 DHT dht1(DHTPIN1, DHTTYPE); // DHT sensor 1 on 17
 
 unsigned long sendDataPrevMillis = 0;
-int delayBetweenPosts = 10000; // Delay between posts (10 seconds)
+int delayBetweenPosts = 2500; // Delay between posts (10 seconds)
 
 void setup()
 {
@@ -60,6 +68,12 @@ void setup()
 
   // Initialize DHT sensors
   dht1.begin();
+
+  // Initialize PIR
+  pinMode(sensorPIR, INPUT);
+
+  
+  
 }
 
 void loop()
@@ -100,6 +114,62 @@ void loop()
     else
     {
       Serial.println("Failed to upload Sensor 1 humidity: " + fbdo.errorReason());
+    }
+
+    //// PIR Section /////
+    PIRStat = digitalRead(sensorPIR);
+    String path2 = "/Sensor Gerak";
+
+    if (PIRStat == HIGH) // Use comparison operator
+    {
+      Serial.println("Motion detected");
+
+      // Send data to Firebase
+      if (Firebase.RTDB.setInt(&fbdo, path2 + "/Gerakan", 1))
+      {
+        Serial.println("Data sent to Firebase: Motion detected!");
+      }
+      else
+      {
+        Serial.println("Failed to send data to Firebase.");
+        Serial.println(fbdo.errorReason());
+      }
+    }
+    else
+    {
+      Serial.println("No motion detected.");
+
+      // Send data to Firebase
+      if (Firebase.RTDB.setInt(&fbdo, path2 + "/Gerakan", 0))
+      {
+        Serial.println("Data sent to Firebase: No motion.");
+      }
+      else
+      {
+        Serial.println("Failed to send data to Firebase.");
+        Serial.println(fbdo.errorReason());
+      }
+    }
+
+    ///// GAS SENSOR SECTION /////
+    int sensorValue = analogRead(mq135Pin);       // Read the analog value from MQ135
+    float voltage = sensorValue * (5.0 / 1023.0); // Convert analog value to voltage
+    // Calculate resistance of the sensor
+
+    float RS = ((5.0 - voltage) / voltage) * R0;
+
+    // Estimate smoke concentration in ppm (simplified equation)
+    float ratio = RS / R0;                              // Gas ratio
+    float ppm = 116.6020682 * pow(ratio, -2.769034857); // Smoke equation from MQ135 datasheet
+
+    String path3 = "/Sensor Asap" ;
+    if (Firebase.RTDB.setFloat(&fbdo, path3 + "/Air Quality", ppm))
+    {
+      Serial.println("Sensor MQ135 upload successfully");
+    }
+    else
+    {
+      Serial.println("Failed to upload Sensor MQ135: " + fbdo.errorReason());
     }
   }
 }
