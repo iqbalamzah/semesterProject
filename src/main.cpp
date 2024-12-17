@@ -9,15 +9,15 @@
 #define DHTTYPE DHT22
 
 // Replace with your Wi-Fi credentials and Firebase details
-#define WIFI_SSID "SENTRA SURYA"
-#define WIFI_PASSWORD "sseP2APC"
-#define API_KEY "AIzaSyC-W0eoIgtE7_tPaCGRexpJ0hgeumMEWLs"
-#define DATABASE_URL "https://iot-unchpamparam-bb8be-default-rtdb.firebaseio.com/" // Example: https://your-project-id.firebaseio.com/
-#define USER_EMAIL "iotunchpamparam@gmail.com"
-#define USER_PASSWORD "makankuy"
+#define WIFI_SSID "IoTKU"
+#define WIFI_PASSWORD "titipantuhan"
+#define API_KEY "AIzaSyCWrno9AcZOEe-wDikyZoOipxuNGeob1yo"
+#define DATABASE_URL "https://push-notif-8b8f9-default-rtdb.asia-southeast1.firebasedatabase.app/" // Example: https://your-project-id.firebaseio.com/
+#define USER_EMAIL "iot@unpam.com"
+#define USER_PASSWORD "123456"
 
 // Define DHT22 sensor pins
-#define DHTPIN1 17
+#define DHTPIN1 18
 // #define DHT_PIN2 D6
 
 // Define Sensor PIR
@@ -26,6 +26,9 @@ int PIRStat = 0;
 
 // define sensor asap MQ135
 const int mq135Pin = 35;
+
+// define Buzzerpin
+int buzzerPin = 19;
 
 // Calibration constant (adjust based on your sensor and environment)
 const float R0 = 10.0;              // This should be calibrated in clean air
@@ -72,7 +75,7 @@ void setup()
   // Initialize PIR
   pinMode(sensorPIR, INPUT);
 
-  
+  pinMode (buzzerPin, OUTPUT);
   
 }
 
@@ -97,7 +100,7 @@ void loop()
     Serial.println("Sensor 1 - Temp: " + String(temperature1) + "°C, Humidity: " + String(humidity1) + "%");
 
     // Upload sensor 1 data to Firebase using correct method
-    String path1 = "/Sensor Suhu dan Temprature";
+    String path1 = "/SensorSuhuTemprature";
     if (Firebase.RTDB.setFloat(&fbdo, path1 + "/temperature", temperature1))
     {
       Serial.println("Sensor 1 temperature uploaded successfully");
@@ -118,7 +121,7 @@ void loop()
 
     //// PIR Section /////
     PIRStat = digitalRead(sensorPIR);
-    String path2 = "/Sensor Gerak";
+    String path2 = "/SensorGerak";
 
     if (PIRStat == HIGH) // Use comparison operator
     {
@@ -162,7 +165,7 @@ void loop()
     float ratio = RS / R0;                              // Gas ratio
     float ppm = 116.6020682 * pow(ratio, -2.769034857); // Smoke equation from MQ135 datasheet
 
-    String path3 = "/Sensor Asap" ;
+    String path3 = "/SensorAsap" ;
     if (Firebase.RTDB.setFloat(&fbdo, path3 + "/Air Quality", ppm))
     {
       Serial.println("Sensor MQ135 upload successfully");
@@ -171,5 +174,25 @@ void loop()
     {
       Serial.println("Failed to upload Sensor MQ135: " + fbdo.errorReason());
     }
+
+    //Pembacaan dari Website
+    if (Firebase.RTDB.getInt(&fbdo, "/alarm/alarmState")) {
+    int Buzzstate = fbdo.to<int>();
+    
+    //If Buzzstate is 1 (ON), turn on the Alarm and print "Alarm ON"
+    if (Buzzstate == 1) {
+      Serial.println("Alarm ON");
+      digitalWrite (buzzerPin, HIGH);
+    } 
+    // If Buzzstate is 0 (OFF), turn off the Alarm
+    else {
+      Serial.println("Alarm OFF");
+      digitalWrite (buzzerPin, LOW);
+    }
+    Serial.printf("Alarm State: %d\n", Buzzstate);
+  }
+
+ 
+
   }
 }
